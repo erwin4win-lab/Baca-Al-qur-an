@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global validation helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Helper for validating UserProfile
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'planId', 'lastReadPage'])
+        && data.keys().hasOnly([
+          'userId', 'displayName', 'email', 'photoURL', 'planId',
+          'customDays', 'customTargetCount', 'lastReadPage', 'lastReadSurah',
+          'lastReadAyat', 'currentJuz', 'soundEnabled', 'hapticEnabled',
+          'startDate', 'userDivision', 'updatedAt', 'createdAt'
+        ])
+        && data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && (data.planId in ['1x', '2x', '3x', 'custom'])
+        && (data.lastReadPage is int && data.lastReadPage >= 1 && data.lastReadPage <= 604)
+        && (!('email' in data) || (data.email is string && data.email.size() <= 150))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && (!('customDays' in data) || (data.customDays is int && data.customDays >= 1 && data.customDays <= 365))
+        && (!('customTargetCount' in data) || (data.customTargetCount is int && data.customTargetCount >= 1 && data.customTargetCount <= 30))
+        && (!('lastReadSurah' in data) || (data.lastReadSurah is string && data.lastReadSurah.size() <= 50))
+        && (!('lastReadAyat' in data) || (data.lastReadAyat is int && data.lastReadAyat >= 0 && data.lastReadAyat <= 300))
+        && (!('currentJuz' in data) || (data.currentJuz is int && data.currentJuz >= 1 && data.currentJuz <= 30))
+        && (!('soundEnabled' in data) || data.soundEnabled is bool)
+        && (!('hapticEnabled' in data) || data.hapticEnabled is bool)
+        && (!('startDate' in data) || (data.startDate is string && data.startDate.size() <= 20))
+        && (!('userDivision' in data) || (data.userDivision is string && data.userDivision.size() <= 60))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
+    // Helper for validating DayRecord
+    function isValidRecord(data) {
+      return data.keys().hasAll(['userId', 'date', 'targetPages', 'completedPages'])
+        && data.keys().hasOnly([
+          'userId', 'date', 'dayNumber', 'targetPages', 'completedPages',
+          'debtCarriedOver', 'debtAdded', 'prayers', 'notes', 'updatedAt'
+        ])
+        && data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128
+        && data.date is string && data.date.size() >= 8 && data.date.size() <= 15
+        && data.targetPages is int && data.targetPages >= 0 && data.targetPages <= 604
+        && data.completedPages is int && data.completedPages >= 0 && data.completedPages <= 604
+        && (!('dayNumber' in data) || (data.dayNumber is int && data.dayNumber >= 0 && data.dayNumber <= 365))
+        && (!('debtCarriedOver' in data) || (data.debtCarriedOver is int && data.debtCarriedOver >= 0 && data.debtCarriedOver <= 604))
+        && (!('debtAdded' in data) || (data.debtAdded is int && data.debtAdded >= 0 && data.debtAdded <= 604))
+        && (!('prayers' in data) || data.prayers is map)
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Helper for validating OfficeGroup
+    function isValidGroup(data) {
+      return data.keys().hasAll(['id', 'code', 'name', 'targetKhatamGroup'])
+        && data.keys().hasOnly(['id', 'code', 'name', 'targetKhatamGroup', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.code is string && data.code.size() >= 3 && data.code.size() <= 32
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.targetKhatamGroup is int && data.targetKhatamGroup >= 1 && data.targetKhatamGroup <= 1000
+        && (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Helper for validating OfficeMember
+    function isValidMember(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'division', 'totalPagesRead'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'name', 'division', 'avatarColor', 'targetKhatam',
+          'totalPagesRead', 'totalTargetPages', 'todayCompletedPages', 'todayTargetPages',
+          'currentJuz', 'currentSurah', 'streakDays', 'lastActive', 'duasReceived', 'updatedAt'
+        ])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.division is string && data.division.size() <= 60
+        && data.totalPagesRead is int && data.totalPagesRead >= 0 && data.totalPagesRead <= 100000
+        && (!('avatarColor' in data) || (data.avatarColor is string && data.avatarColor.size() <= 50))
+        && (!('targetKhatam' in data) || (data.targetKhatam is int && data.targetKhatam >= 1 && data.targetKhatam <= 50))
+        && (!('totalTargetPages' in data) || (data.totalTargetPages is int && data.totalTargetPages >= 0 && data.totalTargetPages <= 100000))
+        && (!('todayCompletedPages' in data) || (data.todayCompletedPages is int && data.todayCompletedPages >= 0 && data.todayCompletedPages <= 604))
+        && (!('todayTargetPages' in data) || (data.todayTargetPages is int && data.todayTargetPages >= 0 && data.todayTargetPages <= 604))
+        && (!('currentJuz' in data) || (data.currentJuz is int && data.currentJuz >= 1 && data.currentJuz <= 30))
+        && (!('currentSurah' in data) || (data.currentSurah is string && data.currentSurah.size() <= 60))
+        && (!('streakDays' in data) || (data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 1000))
+        && (!('lastActive' in data) || (data.lastActive is string && data.lastActive.size() <= 100))
+        && (!('duasReceived' in data) || (data.duasReceived is int && data.duasReceived >= 0 && data.duasReceived <= 100000))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // 1. User Profiles: Isolated & Owner-Secured
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false; // Blanket user listing forbidden
+
+      allow create: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming());
+
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming());
+
+      allow delete: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId;
+
+      // User Daily Records Subcollection
+      match /records/{date} {
+        allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+        allow list: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+        allow create: if isSignedIn()
+          && isValidId(userId)
+          && request.auth.uid == userId
+          && isValidRecord(incoming());
+
+        allow update: if isSignedIn()
+          && isValidId(userId)
+          && request.auth.uid == userId
+          && isValidRecord(incoming());
+
+        allow delete: if isSignedIn()
+          && isValidId(userId)
+          && request.auth.uid == userId;
+      }
+    }
+
+    // 2. Office Community Groups & Leaderboard
+    match /officeGroups/{groupId} {
+      allow get: if isSignedIn() && isValidId(groupId);
+      allow list: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && isValidId(groupId)
+        && isValidGroup(incoming())
+        && (!('createdBy' in incoming()) || incoming().createdBy == request.auth.uid);
+
+      allow update: if isSignedIn()
+        && isValidId(groupId)
+        && isValidGroup(incoming());
+
+      allow delete: if isSignedIn()
+        && isValidId(groupId)
+        && existing().createdBy == request.auth.uid;
+
+      // Group Members (Leaderboard entries)
+      match /members/{memberId} {
+        allow get: if isSignedIn() && isValidId(groupId) && isValidId(memberId);
+        allow list: if isSignedIn() && isValidId(groupId);
+
+        allow create: if isSignedIn()
+          && isValidId(groupId)
+          && isValidId(memberId)
+          && incoming().userId == request.auth.uid
+          && isValidMember(incoming());
+
+        // Colleague self-update, OR sending dua (incrementing duasReceived)
+        allow update: if isSignedIn()
+          && isValidId(groupId)
+          && isValidId(memberId)
+          && isValidMember(incoming())
+          && (
+            // Owner updating their reading progress
+            (existing().userId == request.auth.uid && incoming().userId == request.auth.uid) ||
+            // Any peer sending a dua (only modifying duasReceived and updatedAt)
+            (incoming().diff(existing()).affectedKeys().hasOnly(['duasReceived', 'updatedAt'])
+              && incoming().duasReceived == existing().duasReceived + 1)
+          );
+
+        allow delete: if isSignedIn()
+          && isValidId(groupId)
+          && isValidId(memberId)
+          && existing().userId == request.auth.uid;
+      }
+    }
+  }
+}

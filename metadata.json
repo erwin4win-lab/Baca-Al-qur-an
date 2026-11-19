@@ -1,0 +1,6 @@
+{
+  "name": "Mutaba'ah Qur'an - Pelacak Progres Ramadhan",
+  "description": "Aplikasi Pelacak Progres Harian Al-Qur'an menuju dan selama Ramadhan dengan pembagian 5 waktu shalat, pelacak utang tilawah otomatis, kalender target khatam, dan panduan kode Room DB Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

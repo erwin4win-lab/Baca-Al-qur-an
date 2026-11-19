@@ -1,0 +1,274 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile, reading settings, and aggregate progress",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 150
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile picture URL",
+          "maxLength": 500
+        },
+        "planId": {
+          "type": "string",
+          "description": "Chosen khatam plan",
+          "enum": ["1x", "2x", "3x", "custom"],
+          "maxLength": 20
+        },
+        "customDays": {
+          "type": "integer",
+          "description": "Target days for custom plan"
+        },
+        "customTargetCount": {
+          "type": "integer",
+          "description": "Number of khatam completions targeted"
+        },
+        "lastReadPage": {
+          "type": "integer",
+          "description": "Last page read in Mushaf Madinah (1-604)"
+        },
+        "lastReadSurah": {
+          "type": "string",
+          "description": "Last surah name read",
+          "maxLength": 50
+        },
+        "lastReadAyat": {
+          "type": "integer",
+          "description": "Last ayah number read"
+        },
+        "currentJuz": {
+          "type": "integer",
+          "description": "Current Juz number (1-30)"
+        },
+        "soundEnabled": {
+          "type": "boolean",
+          "description": "Sound effects toggle"
+        },
+        "hapticEnabled": {
+          "type": "boolean",
+          "description": "Haptic feedback toggle"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Tracking start date (YYYY-MM-DD)",
+          "maxLength": 20
+        },
+        "userDivision": {
+          "type": "string",
+          "description": "Office department / division",
+          "maxLength": 60
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account created timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["userId", "displayName", "planId", "lastReadPage"]
+    },
+    "DayRecord": {
+      "title": "DayRecord",
+      "description": "Daily reading progress and prayer checkpoints",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the record in YYYY-MM-DD format",
+          "maxLength": 15
+        },
+        "dayNumber": {
+          "type": "integer",
+          "description": "Day index in reading plan"
+        },
+        "targetPages": {
+          "type": "integer",
+          "description": "Target pages for this day"
+        },
+        "completedPages": {
+          "type": "integer",
+          "description": "Pages read today"
+        },
+        "debtCarriedOver": {
+          "type": "integer",
+          "description": "Reading debt carried over from yesterday"
+        },
+        "debtAdded": {
+          "type": "integer",
+          "description": "New debt added today"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal reflection or notes",
+          "maxLength": 500
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["userId", "date", "targetPages", "completedPages"]
+    },
+    "OfficeGroup": {
+      "title": "OfficeGroup",
+      "description": "Office group for collective khatam circle",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Group ID",
+          "maxLength": 64
+        },
+        "code": {
+          "type": "string",
+          "description": "Unique join code (e.g. KANTOR-RAMADHAN)",
+          "maxLength": 32
+        },
+        "name": {
+          "type": "string",
+          "description": "Group title",
+          "maxLength": 120
+        },
+        "targetKhatamGroup": {
+          "type": "integer",
+          "description": "Collective khatam target count"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Creator UID",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "code", "name", "targetKhatamGroup"]
+    },
+    "OfficeMember": {
+      "title": "OfficeMember",
+      "description": "Office colleague member in the leaderboard",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique member identifier or user UID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of colleague",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Member display name",
+          "maxLength": 100
+        },
+        "division": {
+          "type": "string",
+          "description": "Work division / team",
+          "maxLength": 60
+        },
+        "avatarColor": {
+          "type": "string",
+          "description": "Avatar badge color class",
+          "maxLength": 50
+        },
+        "targetKhatam": {
+          "type": "integer",
+          "description": "Target khatam count"
+        },
+        "totalPagesRead": {
+          "type": "integer",
+          "description": "Total pages read so far"
+        },
+        "totalTargetPages": {
+          "type": "integer",
+          "description": "Overall target pages"
+        },
+        "todayCompletedPages": {
+          "type": "integer",
+          "description": "Pages read today"
+        },
+        "todayTargetPages": {
+          "type": "integer",
+          "description": "Target pages today"
+        },
+        "currentJuz": {
+          "type": "integer",
+          "description": "Current juz position (1-30)"
+        },
+        "currentSurah": {
+          "type": "string",
+          "description": "Current surah being read",
+          "maxLength": 60
+        },
+        "streakDays": {
+          "type": "integer",
+          "description": "Consecutive days read"
+        },
+        "lastActive": {
+          "type": "string",
+          "description": "Human friendly last activity note",
+          "maxLength": 100
+        },
+        "duasReceived": {
+          "type": "integer",
+          "description": "Number of duas received from colleagues"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "name", "division", "totalPagesRead"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile, reading settings, and aggregate progress"
+    },
+    "/users/{userId}/records/{date}": {
+      "schema": "DayRecord",
+      "description": "Daily reading progress and prayer checkpoints"
+    },
+    "/officeGroups/{groupId}": {
+      "schema": "OfficeGroup",
+      "description": "Office community reading groups"
+    },
+    "/officeGroups/{groupId}/members/{memberId}": {
+      "schema": "OfficeMember",
+      "description": "Colleague progress in an office group for leaderboard"
+    }
+  }
+}
